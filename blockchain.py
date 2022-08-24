@@ -59,7 +59,7 @@ class Blockchain(object):
 
     # validates if the hash of last_proof and proof contains 4 leading 0s
     @staticmethod
-    def valid_proof(self, last_proof, proof):
+    def valid_proof(last_proof, proof):
         guess = f'{last_proof}{proof}'.encode()
         guess_hash = hashlib.sha256(guess).hexdigest()
         return guess_hash[:4] == '0000'
@@ -134,6 +134,10 @@ node_identifier = str(uuid4()).replace('-','')
 blockchain = Blockchain()
 
 @app.route('/', methods=['GET'])
+def start():
+    return "Let's start!"
+
+@app.route('/mine', methods=['GET'])
 def mine():
     # calculate proof of work == mine a block
     last_block = blockchain.last_block
@@ -229,4 +233,19 @@ def full_chain():
     return jsonify(response), 200
 
 
+@app.route('/nodes/', methods=['GET'])
+def get_nodes():
+    response = {
+        'total_nodes': list(blockchain.nodes)
+    }
+    return jsonify(response), 201
 
+
+if __name__ == '__main__':
+    from argparse import ArgumentParser
+
+    parser = ArgumentParser()
+    parser.add_argument('-p','--port', default=5000, type=int, help='port to listen on')
+    args = parser.parse_args()
+
+    app.run(host='0.0.0.0', port=args.port)
