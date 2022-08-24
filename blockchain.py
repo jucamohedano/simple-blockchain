@@ -1,8 +1,10 @@
 #!/usr/bin/python3
 import json
 import hashlib
+from uuid import uuid4
 import requests
 
+from flask import Flask, jsonify, request
 from time import time
 from urllib.parse import urlparse
 
@@ -113,4 +115,118 @@ class Blockchain(object):
             return True
         
         return False
+
+# I will use Flask framework to map endpoints to python functions; 
+# hence allowing us to talk to our blockchain over the web using HHTP requests
+# I will create four methods:
+# /transactions : to tell total number of transactions
+# /transactions/new: to create new transaction to the block
+# /mine: to tell our service to mine a new block
+# /chain: to return full blockchain
+
+# Instantiate node
+app = Flask(__name__)
+
+# Generate globally unique address to this node
+node_identifier = str(uuid4()).replace('-','')
+
+# Instantiate the blockchain
+blockchain = Blockchain()
+
+@app.route('/', methods=['GET'])
+def mine():
+    # calculate proof of work == mine a block
+    last_block = blockchain.last_block
+    last_proof = last_block['proof']
+    proof = blockchain.proof_of_work(last_proof)
+
+    # reward miner by granting him 1 coin
+    # the sender is 0 to signify that this node has mined a new coin
+    
+    blockchain.new_transaction(
+        sender = "0",
+        recipient = node_identifier,
+        amount = 1
+    )
+
+    # create new block by adding it to the chain
+    previous_hash = blockchain.hash(last_block)
+    block = blockchain.new_block(proof, previous_hash)
+
+    response = {
+        'message': 'New Block Added!',
+        'index': block['index'],
+        'transaction': block['transactions'],
+        'proof': block['proof'],
+        'previous_hash': block['previous_hash']
+    }
+
+    return jsonify(response), 200
+
+@app.route('/transactions', methods=['GET'])
+def total_transactions():
+        return "We have got so many transactions"
+
+@app.route('/transactions/new', methods=['POST'])
+def new_transaction():
+    values = request.get_json()
+
+    required = ['sender', 'recipient', 'amount']
+    if not all (k in values for k in required):
+        return "Missing values"
+
+    # create a new transaction 
+    index = blockchain.new_transaction(
+        values['sender'],
+        values['recipient'],
+        values['amount']
+    )
+
+    response = {'message': f'Transaction will be added to the block {index}'}
+    return jsonify(response), 200
+
+@app.route('/nodes/register', methods=['POST'])
+def register_nodes():
+    values = request.get_json()
+
+    nodes = values.get('nodes')
+    if nodes is None:
+        return "Error: Please supply a valid list of nodes", 400
+    
+    for node in nodes:
+        blockchain.register_node(node)
+
+    response = {
+        'message' : 'New nodes have been added',
+        'total_nodes': list(blockchain.nodes)
+    }
+    return jsonify(response), 201
+
+@app.route('/nodes/resolve', methods=['GET'])
+def consenses():
+    replaced = blockchain.resolve_conflicts()
+    
+    if replaced:
+        response = {
+            'message' : 'Our blockchain has been replaced',
+            'new_chain' : blockchain.chain
+        }
+    else:
+        response = {
+            'message' : 'Our blockchain is authoritive',
+            'chain' : blockchain.chain
+        }
+
+    return jsonify(response), 200
+
+@app.route('/chain')
+def full_chain():
+    response = {
+        'chain' : blockchain.chain,
+        'length' : len(blockchain.chain)
+    }
+
+    return jsonify(response), 200
+
+
 
