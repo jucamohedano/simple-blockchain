@@ -1,0 +1,25 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: blockchain-deployment
+spec:
+  selector:
+    matchLabels:
+      app: blockchain
+  replicas: 4 # tells deployment to run # pods matching the template
+  template:
+    metadata:
+      labels:
+        app: blockchain
+    spec:
+      containers:
+      - name: blockchain
+        image: jucamohedano/blockchain:v2.0
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 5000
+        env:
+          - name: POD_IP
+            valueFrom:
+              fieldRef:
+                fieldPath: status.podIP
