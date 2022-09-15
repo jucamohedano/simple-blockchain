@@ -1,17 +1,20 @@
-Simple blockchain in Python.
+# Simple blockchain in Python
+## Learning the basics of blockchain operations and some orchestration with kubernetes
 
-Some useful commands:
+### Some useful commands:
 
-    Start minikube: minikube start --nodes 2 -p <cluster-name>
+    Start minikube: `minikube start --nodes 2 -p <cluster-name>`
 
-    Make deployment: kubectl apply -f deployment.yaml
+    Make deployment: `kubectl apply -f deployment.yaml`
     
-    Run LoadBalancer service: kubectl apply -f blockchain_service.yaml
+    Run LoadBalancer service: `kubectl apply -f blockchain_service.yaml`
 
-    Apply rbac.yaml file to run kubernetes API on python (read more: https://github.com/kubernetes-client/python/blob/master/examples/in_cluster_config.py)
+    Apply rbac.yaml file to run kubernetes API on python (read more: https://github.com/kubernetes-client/python/blob/master/examples/in_cluster_config.py) - `kubectl apply -f rbac.yaml`
 
-    On a separate terminal: minikube tunnel
+    On a separate terminal: `minikube tunnel`
 
-    Execute a shell inside a pod: kubectl exec --stdin --tty <pod-name> -- sh
+    Execute a shell inside a pod: `kubectl exec --stdin --tty <pod-name> -- sh`
 
-    If you want to see some metrics enable the dashboard addon, and the metrics addon. Then just get the url to the dashboard with command: minikube dashboard --url -p <cluster-name>
+    If you want to see some metrics enable the dashboard addon, and the metrics addon. Then just get the url to the dashboard with command: `minikube dashboard --url -p <cluster-name>`
+
+## Overview
