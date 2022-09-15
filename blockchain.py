@@ -3,20 +3,25 @@ import json
 import hashlib
 from uuid import uuid4
 import requests
+import os
 
 from flask import Flask, jsonify, request
-from time import time
+from time import time, sleep
 from urllib.parse import urlparse
+from kubernetes import client, config
 
+
+                
 
 class Blockchain(object):
     def __init__(self):
         self.chain = []
         self.current_transactions = []
-        self.nodes = set() # nodes are the machines!
+        self.nodes = set() # nodes are the workers
 
         # initialize the genesis block
         self.new_block(previous_hash='1', proof=100)
+        
 
     # create new block and add it to the chain
     def new_block(self, proof, previous_hash):
@@ -25,7 +30,7 @@ class Blockchain(object):
                 'timestamp' : time(),
                 'transactions' : self.current_transactions,
                 'proof' : proof,
-                'previous_hash' : previous_hash or self.hash(self.chain[-1])
+                'previous_hash' : previous_hash
         }
         self.current_transactions = []
         self.chain.append(block)
@@ -47,13 +52,13 @@ class Blockchain(object):
         return self.chain[-1]
 
     '''
-    PoW algorithm:
+    Consensus algorithm: Proof of Work (PoW)
     compute a hash with previous block's proof
     hash contains 4 leading 0s
     '''
     def proof_of_work(self, last_proof):
         proof = 0
-        while self.valid_proof(last_proof, proof):
+        while not self.valid_proof(last_proof, proof):
             proof += 1
         return proof
 
@@ -72,13 +77,12 @@ class Blockchain(object):
 
     # validate a blockchain
     # loops through every block and verifies hash and proof
-    def validate_chain(self):
-        last_block = self.chain[0]
-        current_idx = 1
+    def validate_chain(self, chain):
+        last_block = chain[1]
+        current_idx = 2
 
-        while current_idx < len(self.chain):
-            block = self.chain[current_idx]
-
+        while current_idx < len(chain):
+            block = chain[current_idx]
             if block['previous_hash'] != self.hash(last_block):
                 return False
             elif not self.valid_proof(last_block['proof'], block['proof']):
@@ -90,9 +94,12 @@ class Blockchain(object):
 
     # register new "machine" in the blockchain
     def register_node(self, address):
-        parsed_url = urlparse(address)
-        self.nodes.add(parsed_url.netloc)
-
+        # parsed_url = urlparse(address)
+        self.nodes.add(address)
+        
+    # blockchain conflicts can occur due to several cases, explained here:
+    # https://www.geeksforgeeks.org/blockchain-forks/
+    # In our case we will update the blockchain with the largest blockchain
     def resolve_conflicts(self):
         neighbours = self.nodes
         new_chain = None
@@ -100,7 +107,7 @@ class Blockchain(object):
         max_length = len(self.chain)
 
         for node in neighbours:
-            response = requests.get(f'http://{node}/chain')
+            response = requests.get(f'http://{node}:5000/chain') 
 
             if response.status_code == 200:
                 length = response.json()['length']
@@ -116,13 +123,18 @@ class Blockchain(object):
         
         return False
 
-# I will use Flask framework to map endpoints to python functions; 
-# hence allowing us to talk to our blockchain over the web using HHTP requests
-# I will create four methods:
-# /transactions : to tell total number of transactions
-# /transactions/new: to create new transaction to the block
-# /mine: to tell our service to mine a new block
-# /chain: to return full blockchain
+'''
+I will use Flask framework to map endpoints to python functions; 
+hence allowing us to talk to our blockchain over the web using HHTP requests
+I will create four methods:
+/transactions : to tell total number of transactions
+/transactions/new: to create new transaction to the block
+/mine: to tell our worker node to mine a new block
+/chain: to return full blockchain
+/nodes/register: register worker node in the blockchain
+/nodes/resolve: resolve blockchain conflicts and update blockchain
+/nodes: total number of worker nodes
+'''
 
 # Instantiate node
 app = Flask(__name__)
@@ -135,7 +147,7 @@ blockchain = Blockchain()
 
 @app.route('/', methods=['GET'])
 def start():
-    return "Let's start!"
+    return "Let's start!", 200
 
 @app.route('/mine', methods=['GET'])
 def mine():
@@ -213,7 +225,7 @@ def consenses():
         }
     else:
         response = {
-            'message' : 'Our blockchain is authoritive',
+            'message' : 'No change in our blockchain',
             'chain' : blockchain.chain
         }
 
@@ -229,13 +241,31 @@ def full_chain():
     return jsonify(response), 200
 
 
-@app.route('/nodes/', methods=['GET'])
+@app.route('/nodes', methods=['GET'])
 def get_nodes():
     response = {
         'total_nodes': list(blockchain.nodes)
     }
     return jsonify(response), 201
 
+def register_blockchains():
+    if os.getenv('KUBERNETES_SERVICE_HOST'):
+        config.load_incluster_config()
+        v1 = client.CoreV1Api()
+
+        sleep(10) # sleep 10 seconds so that containers are all running with assined IPs
+
+        ret = v1.list_namespaced_pod(namespace='default')
+        pods_ips = [i.status.pod_ip for i in ret.items] # get pods' ips
+        pods_ips.remove(os.getenv('POD_IP')) # remove this pod's ip
+        
+        for node in pods_ips:
+            blockchain.register_node(node)
+
+def checker_thread(b):
+    while True:
+        b.resolve_conflicts()
+        sleep(5)
 
 if __name__ == '__main__':
     from argparse import ArgumentParser
@@ -244,4 +274,5 @@ if __name__ == '__main__':
     parser.add_argument('-p','--port', default=5000, type=int, help='port to listen on')
     args = parser.parse_args()
 
+    register_blockchains()
     app.run(host='0.0.0.0', port=args.port)
