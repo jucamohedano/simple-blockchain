@@ -4,11 +4,14 @@ WORKDIR /app
 
 # Install dependencies.
 ADD requirements.txt /app
-RUN cd /app && \
-    pip install -r requirements.txt
+RUN pip install -r requirements.txt
 
 # Add actual source code.
 ADD blockchain.py /app
+ADD register_pods.py /app
+
+# deps
+RUN apk add curl
 
 EXPOSE 5000
 
