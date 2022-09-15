@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: blockchain-service
+spec:
+  type: LoadBalancer
+  selector:
+    app: blockchain
+  ports:
+    - protocol: TCP
+      nodePort: 31000
+      port: 80
+      targetPort: 5000
