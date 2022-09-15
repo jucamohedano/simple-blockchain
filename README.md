@@ -9,12 +9,16 @@
     
     Run LoadBalancer service: `kubectl apply -f blockchain_service.yaml`
 
-    Apply rbac.yaml file to run kubernetes API on python (read more: https://github.com/kubernetes-client/python/blob/master/examples/in_cluster_config.py) - `kubectl apply -f rbac.yaml`
+    Apply rbac.yaml file to run kubernetes API on python 
+    (read more why: https://github.com/kubernetes-client/python/blob/master/examples/in_cluster_config.py) 
+    command: `kubectl apply -f rbac.yaml`
 
     On a separate terminal: `minikube tunnel`
 
     Execute a shell inside a pod: `kubectl exec --stdin --tty <pod-name> -- sh`
 
-    If you want to see some metrics enable the dashboard addon, and the metrics addon. Then just get the url to the dashboard with command: `minikube dashboard --url -p <cluster-name>`
+    If you want to see some metrics enable the dashboard addon, and the metrics addon. 
+    Then just get the url to the dashboard with command: `minikube dashboard --url -p <cluster-name>`
 
 ## Overview
+![alt text](https://github.com/jucamohedano/simple-blockchain/blob/main/overview.png?raw=true)
