@@ -1,24 +1,23 @@
 # Simple blockchain in Python
-## Learning the basics of blockchain operations and some orchestration with kubernetes
 
-### Some useful commands:
+This project aims to learn the basics operations that a blockchain is composed of, as well as deploying a raw application with Docker and Kubernetes locally.
 
-    Start minikube: `minikube start --nodes 2 -p <cluster-name>`
+### Cluster node creation and app deployment commands:
+    1. Start minikube: `minikube start --nodes 2 -p <cluster-name>`
+    2. Make deployment: `kubectl apply -f deployment.yaml`
+    3. Run LoadBalancer service: `kubectl apply -f blockchain_service.yaml`
+    4. Apply rbac.yaml file to run kubernetes API on python `kubectl apply -f rbac.yaml`
+    5. On a separate terminal run `minikube tunnel`
+    6. Execute a shell inside a pod: `kubectl exec --stdin --tty <pod-name> -- sh`
 
-    Make deployment: `kubectl apply -f deployment.yaml`
-    
-    Run LoadBalancer service: `kubectl apply -f blockchain_service.yaml`
+If you want to see some metrics enable the dashboard addon, and the metrics addon. Then just get the url to the dashboard with the command `minikube dashboard --url -p <cluster-name>`
 
-    Apply rbac.yaml file to run kubernetes API on python 
-    (read more why: https://github.com/kubernetes-client/python/blob/master/examples/in_cluster_config.py) 
-    command: `kubectl apply -f rbac.yaml`
+More information on the **why** of step 4 [here](https://github.com/kubernetes-client/python/blob/master/examples/in_cluster_config.py)
 
-    On a separate terminal: `minikube tunnel`
+## Serving the blockchain with Kubernetes
 
-    Execute a shell inside a pod: `kubectl exec --stdin --tty <pod-name> -- sh`
+This diagrams gives a visual representation of how Kubernetes is running the blockchain.
 
-    If you want to see some metrics enable the dashboard addon, and the metrics addon. 
-    Then just get the url to the dashboard with command: `minikube dashboard --url -p <cluster-name>`
-
-## Overview
-![alt text](https://github.com/jucamohedano/simple-blockchain/blob/main/overview.png?raw=true)
+<p align="center">
+<img src="https://github.com/jucamohedano/simple-blockchain/blob/main/overview.png?raw=true" width="600" height="500" class="center">
+</p>
